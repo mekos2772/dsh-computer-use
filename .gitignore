@@ -1,0 +1,12 @@
+# Dependencies / build
+node_modules/
+
+# OpenAI-extracted lens sequence frames are NOT redistributable: kept only as
+# local debug material. fx.lens degradation is graceful when absent.
+assets/
+
+# Local artifacts
+*.log
+*.png
+dsh-cu-*.json
+npm-debug.log*
