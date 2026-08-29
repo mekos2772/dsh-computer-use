@@ -26,7 +26,7 @@ DSH bundle (cordis plugin + `defineTool` + `dsh.bundle.patch`).
 
 ```sh
 # 在 profile 目录安装（或 link 本地开发目录）
-npm i @mekos2772/dsh-computer-use        # 或 dsh plugin --profile web add <path>
+npm i @milkuovo/dsh-computer-use        # 或 dsh plugin --profile web add <path>
 # 重启 dsh 后生效。设置面板/HMR 改配置：
 #   $DSH_HOME/profiles/<profile>/cordis.patch.yml
 ```
@@ -42,7 +42,7 @@ dsh plugin --profile <profile> add .
 ### 独立 MCP server（任何 MCP 宿主可用）
 
 ```sh
-npx @mekos2772/dsh-computer-use   # 或本地: node mcp-server.mjs
+npx @milkuovo/dsh-computer-use   # 或本地: node mcp-server.mjs
 ```
 
 ## MCP 模式（官方适配器同款第二种形态）

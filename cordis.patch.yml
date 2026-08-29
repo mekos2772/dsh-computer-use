@@ -2,7 +2,7 @@
 # name must be the package name so Node resolves it from the profile node_modules.
 - insert:
     - id: computer-use
-      name: '@mekos2772/dsh-computer-use'
+      name: '@milkuovo/dsh-computer-use'
       config:
         askBeforeActions: false
         maxDepth: 8

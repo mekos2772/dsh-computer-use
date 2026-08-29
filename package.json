@@ -1,5 +1,5 @@
 {
-  "name": "@mekos2772/dsh-computer-use",
+  "name": "@milkuovo/dsh-computer-use",
   "version": "0.1.0",
   "description": "Codex Computer Use for DeepSeek Harness on Windows: screenshot + UI Automation tree + mouse/keyboard actions, aligned with the official 10-method Codex Computer Use tool surface. Includes a zero-dependency stdio MCP server.",
   "type": "module",
