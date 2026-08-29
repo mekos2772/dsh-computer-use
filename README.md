@@ -103,7 +103,7 @@ npx @milkuovo/dsh-computer-use   # 或本地: node mcp-server.mjs
 ## 素材说明
 
 **指针光标为纯代码矢量渲染**，分层窗口使用逐像素 alpha 合成，因此不会出现色键抠图残边。
-`assets/lens/` 的镜头帧（`Lens_frame_00..44.png`）为从官方客户端提取的研究素材，**版权归 OpenAI 所有，不随包/仓库分发**（`fx.lens` 缺素材时自动降级，默认点击不使用）。
+`assets/lens/` 的镜头帧（`Lens_frame_00..44.png`）为逆向提取的调试素材，**不随包/仓库分发**（`fx.lens` 缺素材时自动降级，默认点击不使用）。
 
 ## 限制
 
