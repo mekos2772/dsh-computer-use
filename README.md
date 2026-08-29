@@ -1,19 +1,17 @@
 # dsh-computer-use
 
-Codex Computer Use for DeepSeek Harness on **Windows** — a 1:1 re-implementation of the
-official Codex Computer Use tool surface and motion effects, delivered as a standard
-DSH bundle (cordis plugin + `defineTool` + `dsh.bundle.patch`).
+面向 DeepSeek Harness（DSH）的 **Windows 桌面自动化工具**：截图 + 无障碍树双模态操控鼠标键盘，标准 DSH bundle（cordis 插件 + `defineTool` + `dsh.bundle.patch`），另附零依赖 stdio MCP server。
 
-- **10 个官方工具，100% 对齐 schema**：`list_apps` `get_app_state` `click` `perform_secondary_action` `set_value` `select_text` `scroll` `drag` `press_key` `type_text`
+- **10 个工具接口**：`list_apps` `get_app_state` `click` `perform_secondary_action` `set_value` `select_text` `scroll` `drag` `press_key` `type_text`
 - **截图 + 无障碍树双模态**：`get_app_state` 返回 UIA 树（扁平 `element_index`，遍历序）+ 窗口截图（作为 image attachment 直接进入模型视觉上下文；DeepSeek adapter 会把工具结果图片发给 vision 模型）
-- **树文本带坐标（官方 `<app_state>` 对齐）**：每个元素行末尾带 `frame=[x,y,w,h]`；附件管线降采样时 JS 会把 frame 重缩放到附件像素空间（`modelScale`）——树坐标、截图、`click/scroll/drag` 坐标三者始终同一空间，树命中的元素可直接按 frame 中心点击，无需再对照截图
+- **树文本带坐标**：每个元素行末尾带 `frame=[x,y,w,h]`；附件管线降采样时 JS 会把 frame 重缩放到附件像素空间（`modelScale`）——树坐标、截图、`click/scroll/drag` 坐标三者始终同一空间，树命中的元素可直接按 frame 中心点击，无需再对照截图
 - **element_index 第一公民**：动作优先按索引寻址（Invoke/Value/Text 等 UIA pattern），坐标（截图像素）只是兜底；坐标换算链为 模型附件像素 ×(1/modelScale) → 窗口相对像素 → 窗口 bounds → 屏幕像素
-- **动效按交互时序播放**（官方逆向参数）：
+- **动效按交互时序播放**：
   - 桌面软件光标（`overlay.ps1`）：click-through 顶层透明窗（WS_EX_TRANSPARENT|NOACTIVATE，SW_SHOWNOACTIVATE，显示后还原前台），沿 cubic 路径运动；路径进度使用 `response=1.4s, damping=0.9, dt=1/240` 的固定步长 spring 推进；**箭头按 DPI 缩放（左上尖端精确锚定交互点），涟漪/雾圈画在尖端**；动作期间屏幕四周亮起蓝色呼吸光带（高眼提示）
-  - **常驻会话（官方 turn-ended 语义）**：overlay 是一次性进程但**跨动作存活**——光标停在上一动作终点、蓝光持续呼吸，直到回合结束（`agent/status` idle）、空闲 12s、或插件卸载才淡出回收；进程死亡/断流时 EOF 兜底自动还原光标
+  - **常驻会话**：overlay 跨动作存活——光标停在上一动作终点、蓝光持续呼吸，直到回合结束（`agent/status` idle）、空闲 12s、或插件卸载才淡出回收；进程死亡/断流时 EOF 兜底自动还原光标
   - 动画期 + 真实输入期 `SetSystemCursor` 全局隐藏真光标，结束后 `SPI_SETCURSORS` 还原用户光标方案、位置原样归还；进程被杀时 JS 侧 failsafe 兜底还原
   - 软件光标位置在同一 session 内连续保留，下一次移动从上一个动作终点开始；fresh session 从 `(0,0)` 初始化
-  - **指针 = 官方轮廓矢量渲染**（30 行 contour 精确还原，深灰 fill `0.38/0.36/0.35 a0.98` + 白描边 `0.90 a0.92` w1.55 圆角；tipAnchor 布局，箭头尖即目标点）——不依赖外部位图素材，无抠图残留
+  - **指针 = 纯代码矢量渲染**（30 行 contour 绘制，深灰 fill `0.38/0.36/0.35 a0.98` + 白描边 `0.90 a0.92` w1.55 圆角；tipAnchor 布局，箭头尖即目标点）——不依赖外部位图素材，无抠图残留
   - 截图内叠加（模型视角）：同一矢量指针 + 雾圈 + 镜头帧 + 动作轨迹点，坐标按截图比例缩放
 - **审批**：`askBeforeActions`（**默认关**，动作直接执行）。开启后经 `ctx.approval` 逐动作询问；fail-closed——无审批通道（无 agent 上下文或审批服务未注册）时变更类动作直接拒绝
 - **审计**：默认开启，元数据 JSONL 追加到 `~/.dsh-computer-use/audit/computer-use.jsonl`（方法名、app 哈希、字节量、outcome、耗时、via；**不含参数与内容**）
@@ -45,7 +43,7 @@ dsh plugin --profile <profile> add .
 npx @milkuovo/dsh-computer-use   # 或本地: node mcp-server.mjs
 ```
 
-## MCP 模式（官方适配器同款第二种形态）
+## MCP 模式
 
 `dsh-computer-use-mcp`（源码 `mcp-server.mjs`，零依赖）暴露同样的 10 个工具（`element_index` 为 integer）。单次调用即用即退，元素快照持久化在 `%TEMP%\dsh-cu-mcp-session.json`，跨进程仍可按 `element_index` / `marker` 寻址；截图写入 `%TEMP%\dsh-cu-last-shot.png`。默认不启用审批门（由 MCP 宿主把关），`CU_APPROVAL=1` 可强制 fail-closed 审批；`CU_MAX_DEPTH` / `CU_MAX_NODES` 调整树捕获预算。
 
@@ -56,15 +54,18 @@ npx @milkuovo/dsh-computer-use   # 或本地: node mcp-server.mjs
 ```yaml
 - insert:
     - id: computer-use
-      name: 'dsh-computer-use'
+      name: '@milkuovo/dsh-computer-use'
       config:
         askBeforeActions: false   # 动作前逐次审批（默认关；开启后无审批通道会拒绝动作）
         maxDepth: 8               # UIA 树深度上限
         maxNodes: 400             # UIA 树节点上限
         includeScreenshot: true   # get_app_state 附带截图（需要 vision 模型）
         audit: true               # 元数据审计 JSONL（~/.dsh-computer-use/audit/）
+        annotate:
+          grid: true              # 截图画编号十字准星网格；click({marker}) 按标记点选并吸附元素中心
+          lastPoint: true         # 截图画上一次动作落点的琥珀圈（自证）
         fx:
-          screenshot: false       # 调试项；官方独立 overlay 不会烘焙进截图
+          screenshot: false       # 调试项；桌面 overlay 不会烘焙进截图
           overlay: true           # 指针型交互前播放桌面软件光标
           trail: false            # 调试项；仅 screenshot=true 时生效
           lens: false             # 旧版/调试 3D LensSequence；普通点击不开启
@@ -97,7 +98,7 @@ npx @milkuovo/dsh-computer-use   # 或本地: node mcp-server.mjs
 - 指针型动作统一走 `withPointerMotion`：从 session 上一终点规划路径 → 等待 overlay 到位 → 启动真实动作并提交视觉反馈 → 成功后记录新终点；`press_key` / `type_text` 不触发光标
 - **网格标记（`annotate.grid`，默认开）**：内核在 fx 层之上给截图画编号十字准星网格 —— 间距取可交互元素（secondaryActions 含 Invoke 或 settable、enabled、frame ≥ 20px 且在窗口内）`min(w,h)` 中位数 × 0.4（捕获像素），行列由窗口宽高除间距得出，总数上限 100（超出按 1.15 倍步进放大间距）；任何候选元素内一个标记都没有时在其中心补 `E1..` 标记。标注尺寸按 `k = min(1, displayWidth/捕获宽)` 反向放大（十字臂 5/k、线宽 1.5/k、字号 14/k，crimson + 白 halo + 白底标签），附件降采样后依然可读。标记以捕获像素存入 `session.markers`（`click({marker})` 直接 `toScreenPoint`，不过 modelScale），命中后吸附到包含该点的最小可交互元素中心，note 写明吸附结果
 - **落点自证（`annotate.lastPoint`，默认开）**：`get_app_state` 把 session 上一次动作的屏幕坐标换算为窗口相对，若在窗口内则在截图上画琥珀圈（RGB 255,140,0，半径 12/k + 短十字 + 白 halo）；treeText 追加图例（Amber ring / Grid）提示模型按图索骥，`markers`/`lastPointDrawn` 仅在内核结果与 session 内部流转，不进 execute 返回值（DSH 严格校验 output schema）
-- 点击反馈是灰色径向雾场 + 260ms 光标形变 + 扁平蓝色涟漪，不再播放立体蓝球
+- 点击反馈是灰色径向雾场 + 260ms 光标形变 + 扁平蓝色涟漪
 - `fx.lens=true` 仅用于旧版 LensSequence 素材调试，不属于普通点击逻辑
 
 ## 素材说明
@@ -106,7 +107,7 @@ npx @milkuovo/dsh-computer-use   # 或本地: node mcp-server.mjs
 
 ## 限制
 
-- Windows 语义：与官方 macOS 版同为"前台应用"模型（动作自动激活目标窗口）
+- Windows 前台语义：动作自动激活目标窗口（前台应用模型）
 - `select_text` 为 best-effort：TextPattern 可用时 Select，否则聚焦元素
 - UIA 内核常驻（首个调用含 ~0.9s 冷启动，之后每请求 ~60ms；空闲 120s 回收）
 
