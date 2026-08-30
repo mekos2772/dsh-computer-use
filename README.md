@@ -15,6 +15,7 @@
   - 截图内叠加（模型视角）：同一矢量指针 + 雾圈 + 镜头帧 + 动作轨迹点，坐标按截图比例缩放
 - **审批**：`askBeforeActions`（**默认关**，动作直接执行）。开启后经 `ctx.approval` 逐动作询问；fail-closed——无审批通道（无 agent 上下文或审批服务未注册）时变更类动作直接拒绝
 - **审计**：默认开启，元数据 JSONL 追加到 `~/.dsh-computer-use/audit/computer-use.jsonl`（方法名、app 哈希、字节量、outcome、耗时、via；**不含参数与内容**）
+- **更新提醒**（`updateCheck`，默认开）：插件启动时非阻塞查询 npm registry（官方源；若 shell 配置了 `npm_config_registry` 镜像则跟随），发现新版本通过 logger 提醒——同一版本只提醒一次、同一自然日最多一次，离线/registry 错误时完全静默
 - **真光标让位**：动画期与真实输入期用 `SetSystemCursor` 全局隐藏真光标（软件光标是唯一指针），结束后 `SPI_SETCURSORS` 还原用户光标方案，且真光标位置原样归还；JS 侧对进程异常死亡有还原 failsafe
 - **零运行时依赖**：Node 侧只 import `@deepseek-ai/schemastery` / `@deepseek-ai/dsh-tools`；UIA 内核是单文件 PowerShell 5.1（`--serve` 常驻进程，stdin/stdout JSON 行协议，空闲 120s / 200 次请求后回收，崩溃自动重启）
 
@@ -61,6 +62,7 @@ npx @milkuovo/dsh-computer-use   # 或本地: node mcp-server.mjs
         maxNodes: 400             # UIA 树节点上限
         includeScreenshot: true   # get_app_state 附带截图（需要 vision 模型）
         audit: true               # 元数据审计 JSONL（~/.dsh-computer-use/audit/）
+        updateCheck: true         # 启动时查 npm 新版本并提醒（同一版本/同一自然日只提醒一次）
         annotate:
           grid: true              # 截图画编号十字准星网格；click({marker}) 按标记点选并吸附元素中心
           lastPoint: true         # 截图画上一次动作落点的琥珀圈（自证）
