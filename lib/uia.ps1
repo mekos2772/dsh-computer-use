@@ -1126,6 +1126,23 @@ function Invoke-Action($params) {
   $hwnd = Resolve-Window $params
   if ($null -eq $hwnd) { Fail "target window not found: '$($params.app)'" }
 
+  # Snapshot alignment: element paths, markers and coordinates all live in the
+  # latest get_app_state snapshot's window space. If the app param resolves to a
+  # DIFFERENT window (multi-window apps like Chrome, or a switched app), act on
+  # the snapshot window when it still exists and belongs to the same process;
+  # otherwise refuse loudly instead of clicking elsewhere with stale geometry.
+  $snapshotHwnd = if ($null -ne $params.snapshot_hwnd) { [int64]$params.snapshot_hwnd } else { 0 }
+  if ($snapshotHwnd -ne 0 -and $snapshotHwnd -ne $hwnd.ToInt64()) {
+    $snapProc = [uint32]0; [void][CuNative]::GetWindowThreadProcessId([IntPtr]$snapshotHwnd, [ref]$snapProc)
+    $curProc = [uint32]0; [void][CuNative]::GetWindowThreadProcessId($hwnd, [ref]$curProc)
+    $snapUsable = ($snapProc -ne 0 -and $snapProc -eq $curProc -and [CuNative]::IsWindowVisible([IntPtr]$snapshotHwnd))
+    if ($snapUsable) {
+      $hwnd = [IntPtr]$snapshotHwnd
+    } else {
+      Fail "action targets window $($hwnd.ToInt64()) but the get_app_state snapshot was taken for window $snapshotHwnd; call get_app_state for the current app first"
+    }
+  }
+
   # Resolve the UIA tree root BEFORE activating: Chrome's accessibility
   # provider intermittently fails FromHandle with an unrecognized-error
   # HRESULT while the window is mid-activation (Alt bypass + SetForeground).
